@@ -1,0 +1,366 @@
+﻿<Window
+    x:Class="Box86_WinUI.Views.EmulatorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Box86_WinUI.Models"
+    mc:Ignorable="d"
+    Title="86Box Emulator">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.Resources>
+            <!-- Accent highlighting for active AppBarToggleButton states -->
+            <StaticResource x:Key="AppBarToggleButtonBackgroundChecked" ResourceKey="AccentFillColorDefaultBrush" />
+            <StaticResource x:Key="AppBarToggleButtonBackgroundCheckedPointerOver" ResourceKey="AccentFillColorSecondaryBrush" />
+            <StaticResource x:Key="AppBarToggleButtonBackgroundCheckedPressed" ResourceKey="AccentFillColorTertiaryBrush" />
+            <StaticResource x:Key="AppBarToggleButtonForegroundChecked" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="AppBarToggleButtonForegroundCheckedPointerOver" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+            <StaticResource x:Key="AppBarToggleButtonForegroundCheckedPressed" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+
+            <!-- Standard Subtle DropDownButton style adhering to Windows 11 Fluent UX -->
+            <Style x:Key="SubtleDropDownButtonStyle" TargetType="DropDownButton">
+                <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+            </Style>
+        </Grid.Resources>
+
+        <!-- Custom App TitleBar -->
+        <Grid Grid.Row="0" x:Name="AppTitleBar" Height="38" Background="{ThemeResource LayerFillColorDefaultBrush}" ColumnDefinitions="Auto,*" Padding="12,0">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE7F4;" FontSize="14" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                <TextBlock x:Name="TitleTextBlock"
+                           Text="{x:Bind VM.Name, Mode=OneWay}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           VerticalAlignment="Center" />
+                <Border x:Name="PauseBadge" Background="#FFB900" CornerRadius="4" Padding="6,1" Visibility="Collapsed">
+                    <TextBlock Text="PAUSED" FontSize="10" FontWeight="Bold" Foreground="Black" />
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Fluent CommandBar: icon-only primary actions, structured into separated groups -->
+        <CommandBar Grid.Row="1" x:Name="ViewportCommandBar"
+                    Margin="0,0,138,0"
+                    DefaultLabelPosition="Collapsed"
+                    IsSticky="False"
+                    OverflowButtonVisibility="Auto">
+
+            <!-- Group 1: Power / Speed Controls -->
+            <AppBarToggleButton x:Name="PauseToggle" Icon="Pause" Label="Pause"
+                                ToolTipService.ToolTip="Pause / resume emulation (Ctrl+Shift+P)"
+                                Click="OnPauseClicked">
+                <AppBarToggleButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="P" Modifiers="Control,Shift" />
+                </AppBarToggleButton.KeyboardAccelerators>
+            </AppBarToggleButton>
+
+            <AppBarToggleButton x:Name="FastForwardToggle" Label="Fast Forward"
+                                ToolTipService.ToolTip="Fast forward: run unthrottled (Ctrl+Shift+F)"
+                                Click="OnFastForwardClicked">
+                <AppBarToggleButton.Icon><FontIcon Glyph="&#xEB9D;" /></AppBarToggleButton.Icon>
+                <AppBarToggleButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="F" Modifiers="Control,Shift" />
+                </AppBarToggleButton.KeyboardAccelerators>
+            </AppBarToggleButton>
+
+            <AppBarButton x:Name="ResetButton" Icon="Refresh" Label="Hard Reset"
+                          ToolTipService.ToolTip="Hard reset the machine (Ctrl+Shift+F12)"
+                          Click="OnResetClicked">
+                <AppBarButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="F12" Modifiers="Control,Shift" />
+                </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+
+            <AppBarButton x:Name="AcpiShutdownButton" Label="ACPI Shutdown"
+                          ToolTipService.ToolTip="ACPI Shutdown"
+                          Click="OnAcpiShutdownClicked"
+                          Visibility="{x:Bind ViewModel.AcpiShutdownVisibility, Mode=OneWay}">
+                <AppBarButton.Icon><FontIcon Glyph="&#xE7E8;" /></AppBarButton.Icon>
+            </AppBarButton>
+
+            <!-- Divider: Power/Speed | Display -->
+            <AppBarSeparator />
+
+            <!-- Group 2: Display Controls -->
+            <AppBarButton x:Name="ScreenshotButton" Icon="Camera" Label="Take Screenshot"
+                          ToolTipService.ToolTip="Take a screenshot (Ctrl+F11)"
+                          Click="OnScreenshotClicked">
+                <AppBarButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="F11" Modifiers="Control" />
+                </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+
+            <AppBarButton x:Name="FullscreenButton" Label="Fullscreen"
+                          ToolTipService.ToolTip="Toggle fullscreen (F11)"
+                          Click="OnFullscreenClicked">
+                <AppBarButton.Icon><FontIcon Glyph="&#xE740;" /></AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="F11" />
+                </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+
+            <!-- Divider: Display | Options -->
+            <AppBarSeparator />
+
+            <!-- Group 3: Options -->
+            <AppBarButton x:Name="SettingsButton" Icon="Setting" Label="Settings"
+                          ToolTipService.ToolTip="Machine settings"
+                          Click="OnSettingsClicked" />
+
+            <!-- Overflow Menu (Secondary Commands) -->
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Label="Display Options">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE7F4;" /></AppBarButton.Icon>
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <ToggleMenuFlyoutItem x:Name="Lock43Item" Text="Lock 4:3 aspect ratio" IsChecked="True" Click="OnDisplayOptionChanged" />
+                            <ToggleMenuFlyoutItem x:Name="IntegerScalingItem" Text="Integer scaling" Click="OnDisplayOptionChanged" />
+                            <ToggleMenuFlyoutItem x:Name="CrtShaderItem" Text="CRT shader (scanlines)" Click="OnDisplayOptionChanged" />
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+                <AppBarToggleButton x:Name="MouseCaptureToggle" Label="Capture Mouse"
+                                    ToolTipService.ToolTip="Mouse capture: click to capture. Release with Ctrl+Alt, Ctrl+End or middle click."
+                                    Click="OnMouseCaptureToggleClicked">
+                    <AppBarToggleButton.Icon><FontIcon Glyph="&#xE7C9;" /></AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarSeparator />
+                <AppBarButton Label="Send Ctrl+Alt+Del" Click="OnCadClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE765;" /></AppBarButton.Icon>
+                    <AppBarButton.KeyboardAccelerators><KeyboardAccelerator Key="F12" Modifiers="Control" /></AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+                <AppBarButton Label="Send Ctrl+Alt+Esc" Click="OnCaeClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE765;" /></AppBarButton.Icon>
+                    <AppBarButton.KeyboardAccelerators><KeyboardAccelerator Key="F10" Modifiers="Control" /></AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+                <AppBarButton Label="Trigger NMI" Click="OnNmiClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE7BA;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator />
+                <AppBarButton Label="Copy Screenshot to Clipboard" Click="OnCopyScreenshotClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE8C8;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Copy Raw Framebuffer" Click="OnCopyRawFramebufferClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE8B9;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Open Screenshots Folder" Click="OnOpenScreenshotsFolderClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE838;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Open Virtual Printer Tray" Click="OnOpenPrinterTrayClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE749;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator />
+                <AppBarButton Label="Force Power Off" Click="OnForcePowerOffClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE711;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator />
+                <AppBarButton Label="Documentation" Click="OnDocumentationClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE8A7;" /></AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="About 86Box" Click="OnAboutClicked">
+                    <AppBarButton.Icon><FontIcon Glyph="&#xE946;" /></AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
+
+        <!-- Direct3D 11 Display Viewport -->
+        <Grid x:Name="ViewportContainer" Grid.Row="2" Background="#0A0A0E" SizeChanged="OnViewportSizeChanged">
+            <!-- SwapChainPanel hosting the DirectX swapchain -->
+            <!-- Focusable input surface: SwapChainPanel is a Panel (no IsTabStop), so a ContentControl hosts it
+                 and receives keyboard focus, key and pointer events. -->
+            <ContentControl x:Name="InputSurface"
+                            IsTabStop="True" IsHitTestVisible="True" Background="Transparent"
+                            UseSystemFocusVisuals="False" TabFocusNavigation="Once" XYFocusKeyboardNavigation="Disabled"
+                            AllowFocusOnInteraction="True"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            KeyDown="OnViewportKeyDown" KeyUp="OnViewportKeyUp"
+                            PointerPressed="OnViewportPointerPressed" PointerReleased="OnViewportPointerReleased"
+                            PointerMoved="OnViewportPointerMoved" LostFocus="OnViewportLostFocus">
+                <SwapChainPanel x:Name="DisplaySwapChainPanel"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                IsHitTestVisible="True"
+                                Loaded="OnSwapChainPanelLoaded" />
+            </ContentControl>
+
+            <!-- In-Viewport Engine Notification Banner (Replaces Qt Message Boxes) -->
+            <InfoBar x:Name="ViewportInfoBar"
+                     IsOpen="False"
+                     Severity="Warning"
+                     HorizontalAlignment="Stretch"
+                     VerticalAlignment="Top"
+                     Margin="16,12,16,0"
+                     IsClosable="True"
+                     Canvas.ZIndex="100" />
+
+            <!-- Standby / Initializing Viewport Overlay -->
+            <Grid x:Name="ViewportStandbyOverlay" Background="#0C0D11" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Border Background="#16171F" CornerRadius="12" BorderBrush="#262836" BorderThickness="1" 
+                        Padding="32,24" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+                    <StackPanel Spacing="16" HorizontalAlignment="Center">
+                        <Border Width="64" Height="64" CornerRadius="32" Background="#1F212D" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE7F4;" FontSize="32" Foreground="#00FF66" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        
+                        <StackPanel Spacing="4" HorizontalAlignment="Center">
+                            <TextBlock Text="{x:Bind VM.Name, Mode=OneWay}" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                            <TextBlock Text="{x:Bind VM.ArchitectureSummary, Mode=OneWay}" FontSize="12" Foreground="#9999AA" HorizontalAlignment="Center" TextAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel x:Name="StandbyStatusPanel" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <ProgressRing IsActive="True" Width="18" Height="18" />
+                            <TextBlock x:Name="StandbyStatusText" Text="Initializing hardware emulation…" FontSize="12" Foreground="#00FF66" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Capture Message Overlay -->
+            <Border x:Name="CaptureBanner" Background="#CC000000" CornerRadius="8" Padding="16,8"
+                    HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,16,0,0"
+                    Visibility="Collapsed">
+                <TextBlock Text="Mouse captured. Press Middle Click or Ctrl+Alt to release." 
+                           Foreground="White" FontSize="13" FontWeight="SemiBold" />
+            </Border>
+        </Grid>
+
+        <!-- Status Bar Footer with LED Indicators & Interactive Quick-Mount Flyouts -->
+        <Border Grid.Row="3" Height="32"
+                Background="{ThemeResource LayerFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center" Padding="12,0">
+                <!-- Status Icons & Drive Buttons -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Floppy Quick-Mount Button & LED (Icon: Save / Floppy Disk E74E) -->
+                    <DropDownButton x:Name="FloppyButton"
+                                    Style="{ThemeResource SubtleDropDownButtonStyle}"
+                                    Padding="6,3"
+                                    CornerRadius="4"
+                                    ToolTipService.ToolTip="Floppy Drive 1 (Click to manage media)">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Grid>
+                                <FontIcon x:Name="FloppyIcon" Glyph="&#xE74E;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <FontIcon x:Name="FloppyIconMounted" Glyph="&#xE74E;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <FontIcon x:Name="FloppyIconActive" Glyph="&#xE74E;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                            </Grid>
+                            <Grid VerticalAlignment="Center">
+                                <TextBlock x:Name="FloppyLabel" Text="FDD: (Empty)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock x:Name="FloppyFileLabel" Visibility="Collapsed" FontSize="11" Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                           MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout x:Name="FloppyMenuFlyout" Opening="OnFloppyFlyoutOpening" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <!-- CD-ROM Quick-Mount Button & LED (Icon: Optical Disc E958) -->
+                    <DropDownButton x:Name="CdromButton"
+                                    Style="{ThemeResource SubtleDropDownButtonStyle}"
+                                    Padding="6,3"
+                                    CornerRadius="4"
+                                    ToolTipService.ToolTip="CD-ROM Drive 1 (Click to manage media)">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Grid>
+                                <FontIcon x:Name="CdromIcon" Glyph="&#xE958;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <FontIcon x:Name="CdromIconMounted" Glyph="&#xE958;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <FontIcon x:Name="CdromIconActive" Glyph="&#xE958;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </Grid>
+                            <Grid VerticalAlignment="Center">
+                                <TextBlock x:Name="CdromLabel" Text="CD: (Empty)" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock x:Name="CdromFileLabel" Visibility="Collapsed" FontSize="11" Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                           MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout x:Name="CdromMenuFlyout" Opening="OnCdromFlyoutOpening" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <!-- Separator -->
+                    <Rectangle Width="1" Height="14" Fill="{ThemeResource CardStrokeColorDefaultBrush}" Margin="4,0" />
+
+                    <!-- HDD LED with Drive Icon -->
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" Padding="4,2"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.Status.HddTooltip, Mode=OneWay}"
+                                Opacity="{x:Bind ViewModel.Status.HddOpacity, Mode=OneWay}">
+                        <Grid>
+                                <FontIcon x:Name="HddIcon" Glyph="&#xEDA2;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <FontIcon x:Name="HddIconActive" Glyph="&#xEDA2;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                            </Grid>
+                        <TextBlock Text="HDD" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <!-- Network: icon + link state; click for Connect / Disconnect -->
+                    <Button x:Name="NetButton" Style="{StaticResource SubtleButtonStyle}" Padding="4,2" CornerRadius="4"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.Status.NetTooltip, Mode=OneWay}"
+                            Opacity="{x:Bind ViewModel.Status.NetOpacity, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Grid>
+                                <FontIcon x:Name="NetIcon" Glyph="&#xE839;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <FontIcon x:Name="NetIconActive" Glyph="&#xE839;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </Grid>
+                            <TextBlock Text="NET" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <FontIcon Glyph="&#xE70D;" FontSize="8" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="NetMenuFlyout" Opening="OnNetFlyoutOpening" />
+                        </Button.Flyout>
+                    </Button>
+
+                    <!-- Sound: master volume and mute -->
+                    <Button x:Name="SoundButton" Style="{StaticResource SubtleButtonStyle}" Padding="4,2" CornerRadius="4"
+                            ToolTipService.ToolTip="Sound: master volume and mute">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Grid>
+                                <FontIcon x:Name="SoundIcon" Glyph="&#xE767;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <FontIcon x:Name="SoundIconActive" Glyph="&#xE767;" FontSize="12" Opacity="0" IsHitTestVisible="False" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </Grid>
+                            <TextBlock Text="SND" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <FontIcon Glyph="&#xE70D;" FontSize="8" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout>
+                                <StackPanel Spacing="10" MinWidth="240">
+                                    <TextBlock Text="Master volume" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" Value="100" StepFrequency="1"
+                                                ValueChanged="OnVolumeChanged" />
+                                        <TextBlock x:Name="VolumeText" Grid.Column="1" Text="100%" VerticalAlignment="Center" MinWidth="40" TextAlignment="Right" />
+                                    </Grid>
+                                    <ToggleSwitch x:Name="MuteSwitch" Header="Mute" OnContent="Muted" OffContent="Sound on" Toggled="OnMuteToggled" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+
+                <!-- Standardized Roland MT-32 MIDI Status Pill -->
+                <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                        BorderBrush="{ThemeResource SystemFillColorSuccessBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4" Padding="8,2">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <InfoBadge Style="{StaticResource SuccessDotInfoBadgeStyle}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="Mt32LcdText" Text="Roland MT-32 Ready"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Combined Speed & FPS Performance Indicator on Far Right -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xEC4A;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="SpeedValueText" Text="100.0% (60 FPS)" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

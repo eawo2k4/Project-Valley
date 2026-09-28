@@ -34,14 +34,14 @@ add_library(cdrom OBJECT
 )
 target_link_libraries(cdrom chdr-static)
 if(NOT WIN32)
-	target_include_directories(86Box PRIVATE PkgConfig::SNDFILE)
+	target_include_directories(86box_core PRIVATE PkgConfig::SNDFILE)
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 	target_include_directories(cdrom PRIVATE /usr/local/include)
 endif()
-target_link_libraries(86Box PkgConfig::SNDFILE)
+target_link_libraries(86box_core PkgConfig::SNDFILE)
 
-if (WIN32)
+if (WIN32 AND MINGW)
     # MSYS2
-    target_link_libraries(86Box -static ${SNDFILE_STATIC_LIBRARIES})
+    target_link_libraries(86box_core -static ${SNDFILE_STATIC_LIBRARIES})
 endif()

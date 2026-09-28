@@ -4,6 +4,15 @@ CMakeCache.txt
 CMakeFiles
 /build
 *.a
+
+# WinUI (.NET build output and CMake-staged native binaries - regenerate via
+# `dotnet build` and `cmake --build build/winui-mingw --target 86box_core`)
+/winui/bin/
+/winui/obj/
+/winui/runtimes/
+
+# Personal scratch/exploration scripts, not part of the shipped product
+/scratch/
 /src/*.exe
 /src/86Box
 /src/include/86box/version.h

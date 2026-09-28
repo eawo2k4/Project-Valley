@@ -537,6 +537,16 @@ fatal(const char *fmt, ...)
     fflush(stdlog);
     free(temp);
 
+#ifdef EMUBRIDGE_EXPORTS
+    /* Hosted in-process by the WinUI front end: exit() would take the whole application with it, before the
+       message queued above ever reaches the window. On an emulation thread this ends only that thread (the
+       CPU loop is already told to stop); anywhere else it returns and the process exits as before. */
+    {
+        extern void emu_bridge_fatal_exit(void);
+        emu_bridge_fatal_exit();
+    }
+#endif
+
     exit(-1);
 }
 

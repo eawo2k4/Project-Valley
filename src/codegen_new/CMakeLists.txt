@@ -65,5 +65,5 @@ if(DYNAREC)
             "Dynarec is incompatible with target platform ${ARCH}")
     endif()
 
-    target_link_libraries(86Box dynarec cgt)
+    target_link_libraries(86box_core dynarec cgt)
 endif()

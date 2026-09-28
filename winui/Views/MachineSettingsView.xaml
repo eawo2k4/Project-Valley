@@ -1,0 +1,35 @@
+<UserControl
+    x:Class="Box86_WinUI.Views.MachineSettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="32,24,32,24">
+        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Spacing="16">
+            <!-- ========================================== -->
+            <!-- Advanced Category -->
+            <!-- ========================================== -->
+            <StackPanel Spacing="14">
+                <!-- Category Header -->
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE90F;" FontSize="16" Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <TextBlock Text="Advanced" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
+                </StackPanel>
+                <Border Height="1" Background="{ThemeResource CardStrokeColorDefaultBrush}" Margin="0,-4,0,8" />
+
+                <!-- Configuration Card in Settings -->
+                <controls:SettingsCard Header="Configuration file"
+                                       Description="Open this machine's 86box.cfg file in the default text editor"
+                                       ActionIcon="{x:Null}">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8A5;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <Button Content="Open file" Click="OnOpenConfigFileClicked" />
+                </controls:SettingsCard>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

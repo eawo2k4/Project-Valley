@@ -1015,7 +1015,11 @@ svga_render_indexed_gfx(svga_t *svga, bool highres, bool combine8bits)
             p += charwidth;
     }
 
-    if (svga->render_line_offset < 0) {
+    /* While a card is still being programmed (Trident TVGA 9000B right after reset) hdisp can be smaller than the
+       shift and x_add negative; the memmove/memset below would then write before the start of the line - line 0
+       is the start of the bitmap - and corrupt the heap. Only shift a line that really is wider than the shift. */
+    if ((svga->render_line_offset < 0) && (svga->x_add >= 0)
+        && ((charwidth * -svga->render_line_offset) <= svga->hdisp)) {
         uint32_t *orig_line = &svga->monitor->target_buffer->line[svga->displine + svga->y_add][svga->x_add];
         memmove(orig_line, orig_line + (charwidth * -svga->render_line_offset), (svga->hdisp) * 4);
         memset((orig_line + svga->hdisp) - (charwidth * -svga->render_line_offset), svga->overscan_color, (size_t) charwidth * -svga->render_line_offset * 4);
@@ -1444,7 +1448,7 @@ svga_render_8bpp_tseng_lowres(svga_t *svga)
             svga->memaddr += 4;
             p += 8;
         }
-        if (svga->render_line_offset < 0) {
+        if ((svga->render_line_offset < 0) && (svga->x_add >= 0) && ((8 * -svga->render_line_offset) <= svga->hdisp)) {
             uint32_t *orig_line = &svga->monitor->target_buffer->line[svga->displine + svga->y_add][svga->x_add];
             memmove(orig_line, orig_line + (8 * -svga->render_line_offset), (svga->hdisp) * 4);
             memset((orig_line + svga->hdisp) - (8 * -svga->render_line_offset), svga->overscan_color, 8 * -svga->render_line_offset * 4);
@@ -1517,7 +1521,7 @@ svga_render_8bpp_tseng_highres(svga_t *svga)
             p += 8;
         }
 
-        if (svga->render_line_offset < 0) {
+        if ((svga->render_line_offset < 0) && (svga->x_add >= 0) && ((8 * -svga->render_line_offset) <= svga->hdisp)) {
             uint32_t *orig_line = &svga->monitor->target_buffer->line[svga->displine + svga->y_add][svga->x_add];
             memmove(orig_line, orig_line + (8 * -svga->render_line_offset), (svga->hdisp) * 4);
             memset((orig_line + svga->hdisp) - (8 * -svga->render_line_offset), svga->overscan_color, 8 * -svga->render_line_offset * 4);

@@ -41,7 +41,7 @@ if(AMD_K5)
 
 if(DYNAREC)
     add_library(ctk5 OBJECT codegen_timing_k5.c)
-    target_link_libraries(86Box ctk5)
+    target_link_libraries(86box_core ctk5)
 endif()
 
 endif()
@@ -62,4 +62,4 @@ if(DYNAREC)
 endif()
 
 add_subdirectory(softfloat3e)
-target_link_libraries(86Box softfloat3e)
+target_link_libraries(86box_core softfloat3e)

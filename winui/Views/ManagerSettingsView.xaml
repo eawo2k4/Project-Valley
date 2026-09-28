@@ -1,0 +1,150 @@
+<UserControl
+    x:Class="Box86_WinUI.Views.ManagerSettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:viewmodels="using:Box86_WinUI.ViewModels"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="16">
+        <!-- ========================================== -->
+        <!-- General SettingsExpander -->
+        <!-- ========================================== -->
+        <controls:SettingsExpander Header="General"
+                                  Description="App-level preferences and help"
+                                  IsExpanded="True">
+            <controls:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE713;" />
+            </controls:SettingsExpander.HeaderIcon>
+
+            <controls:SettingsExpander.Items>
+                <controls:SettingsCard Header="Getting started"
+                                       Description="Replay the introductory walkthrough and feature tour">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE897;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <Button Content="Restart tour" Command="{x:Bind RestartWelcomeTourCommand}" />
+                </controls:SettingsCard>
+            </controls:SettingsExpander.Items>
+        </controls:SettingsExpander>
+
+        <!-- ========================================== -->
+        <!-- Core Updates SettingsExpander -->
+        <!-- ========================================== -->
+        <controls:SettingsExpander Header="Core Updates"
+                                  Description="Emulation engine release channels, JIT recompilers, and updates"
+                                  IsExpanded="True">
+            <controls:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE895;" />
+            </controls:SettingsExpander.HeaderIcon>
+
+            <controls:SettingsExpander.Items>
+                <!-- Real, compile-time facts about the loaded 86box_core.dll - separate from the
+                     Release Channel / JIT Recompiler cards below, which are only preferences for a
+                     future download, not what's actually running right now. -->
+                <controls:SettingsCard Header="Currently running"
+                                       Description="What's actually loaded right now">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE946;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <StackPanel HorizontalAlignment="Right" Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                            <Border x:Name="RunningChannelBadge" CornerRadius="4" Padding="6,1">
+                                <TextBlock x:Name="RunningChannelBadgeText" FontSize="11" FontWeight="SemiBold" />
+                            </Border>
+                            <TextBlock x:Name="RunningVersionText" Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <TextBlock x:Name="RunningEngineText" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="RunningUpdateStatusText" Style="{StaticResource CaptionTextBlockStyle}" HorizontalAlignment="Right" />
+                    </StackPanel>
+                </controls:SettingsCard>
+
+                <!-- Channel ComboBox -->
+                <controls:SettingsCard Header="Release Channel"
+                                       Description="Select whether to track stable Releases or Experimental builds">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE896;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <ComboBox ItemsSource="{x:Bind UpdateViewModel.ChannelOptions}"
+                              SelectedItem="{x:Bind UpdateViewModel.SelectedChannel, Mode=TwoWay}"
+                              MinWidth="150"
+                              VerticalAlignment="Center" />
+                </controls:SettingsCard>
+
+                <!-- Recompiler ComboBox -->
+                <controls:SettingsCard Header="JIT Recompiler"
+                                       Description="NDR (New Dynamic Recompiler) provides higher performance; ODR offers legacy compatibility">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE950;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <ComboBox SelectedValue="{x:Bind UpdateViewModel.SelectedRecompiler, Mode=TwoWay}"
+                              SelectedValuePath="Content"
+                              MinWidth="150"
+                              VerticalAlignment="Center">
+                        <!-- NDR isn't offered on the Release channel yet - see UpdateViewModel.IsNdrEnabled -->
+                        <ComboBoxItem Content="NDR" IsEnabled="{x:Bind UpdateViewModel.IsNdrEnabled, Mode=OneWay}" />
+                        <ComboBoxItem Content="ODR" />
+                    </ComboBox>
+                </controls:SettingsCard>
+
+                <!-- Check for Updates SettingsCard -->
+                <controls:SettingsCard Header="Check for updates">
+                    <controls:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE895;" />
+                    </controls:SettingsCard.HeaderIcon>
+                    <controls:SettingsCard.Description>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Last checked:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{x:Bind UpdateViewModel.LastCheckedText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </controls:SettingsCard.Description>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <!-- Inline ProgressBar and percentage indicator (visible when updating) -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                                    Visibility="{x:Bind UpdateViewModel.ProgressVisibility, Mode=OneWay}">
+                            <ProgressBar Width="120" Value="{x:Bind UpdateViewModel.DownloadProgress, Mode=OneWay}" Maximum="100" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Bind UpdateViewModel.DownloadProgressText, Mode=OneWay}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Check for updates button -->
+                        <Button Command="{x:Bind UpdateViewModel.CheckForUpdatesCommand}"
+                                IsEnabled="{x:Bind UpdateViewModel.IsUpdating, Mode=OneWay, Converter={StaticResource InvertedBooleanConverter}}"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <ProgressRing Width="14" Height="14" IsActive="True"
+                                              Visibility="{x:Bind UpdateViewModel.IsChecking, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <TextBlock Text="Check for updates" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Download & apply button if update is available -->
+                        <Button Content="Update now"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Command="{x:Bind UpdateViewModel.DownloadAndApplyUpdateCommand}"
+                                Visibility="{x:Bind UpdateViewModel.UpdateAvailableBadgeVisibility, Mode=OneWay}"
+                                VerticalAlignment="Center" />
+
+                        <!-- ActionButton Restart to apply -->
+                        <Button Style="{StaticResource AccentButtonStyle}"
+                                Command="{x:Bind UpdateViewModel.RestartToApplyCommand}"
+                                Visibility="{x:Bind UpdateViewModel.RestartButtonVisibility, Mode=OneWay}"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE777;" FontSize="13" />
+                                <TextBlock Text="Restart to apply" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </controls:SettingsCard>
+            </controls:SettingsExpander.Items>
+        </controls:SettingsExpander>
+    </StackPanel>
+</UserControl>

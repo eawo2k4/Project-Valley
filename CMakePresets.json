@@ -8,12 +8,21 @@
         {
             "name": "base",
             "binaryDir": "${sourceDir}/build/${presetName}",
+            "environment": {
+                "PATH": "C:/msys64/mingw64/bin;$penv{PATH}"
+            },
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/artifacts",
+                "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/ninja.exe",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
                 "DEV_BRANCH": false,
                 "NEW_DYNAREC": false,
-                "QT": true
+                "QT": false,
+                "WINUI": true,
+                "CMAKE_C_COMPILER": "C:/msys64/mingw64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+                "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
             },
             "generator": "Ninja",
             "hidden": true

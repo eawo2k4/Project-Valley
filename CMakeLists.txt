@@ -27,7 +27,7 @@ set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;UltraDebug;Optimized" CACHE STRING "")
 
-if(NOT DEFINED QT OR QT)
+if(QT)
     list(APPEND VCPKG_MANIFEST_FEATURES "qt-ui")
 endif()
 
@@ -133,7 +133,10 @@ option(DEV_BRANCH   "Development branch"                                        
 option(DISCORD      "Discord Rich Presence support"                              ON)
 option(DEBUGREGS486 "Enable debug register opeartion on 486+ CPUs"               OFF)
 option(LIBASAN      "Enable compilation with the addresss sanitizer"             OFF)
-option(QT           "Use the Qt-based user interface"                            ON)
+option(QT           "Use the Qt-based user interface"                            OFF)
+if(WIN32)
+    option(WINUI        "Build the modern WinUI 3 user interface and manager"        ON)
+endif()
 option(SDL2         "Use SDL2 instead of SDL3"                                   OFF)
 option(BUILD_TESTING "Build the unit test suite"                                  OFF)
 option(BUILD_BENCHMARKS "Build performance benchmarks"                            OFF)
